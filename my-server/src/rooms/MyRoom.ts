@@ -9,8 +9,14 @@ export class MyRoom extends Room<MyRoomState> {
 
     this.onMessage("move", (client, message) => {
       var char = this.state.players.get(client.sessionId)
-      char.x += message.x;
-      char.y += message.y;
+      char.x += message.x * char.speed;
+      char.y += message.y * char.speed;
+    });
+  
+    this.onMessage("aim", (client, message) => {
+      var char = this.state.players.get(client.sessionId)
+      char.f_x = message.x;
+      char.f_y = message.y;
     });
   }
 
