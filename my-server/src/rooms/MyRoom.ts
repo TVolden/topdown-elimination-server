@@ -8,15 +8,23 @@ export class MyRoom extends Room<MyRoomState> {
     this.setState(new MyRoomState());
 
     this.onMessage("move", (client, message) => {
-      var char = this.state.players.get(client.sessionId)
-      char.x += message.x * char.speed;
-      char.y += message.y * char.speed;
+      var player = this.state.players.get(client.sessionId);
+      player.moveQueue = message;
     });
   
     this.onMessage("aim", (client, message) => {
-      var char = this.state.players.get(client.sessionId)
-      char.f_x = message.x;
-      char.f_y = message.y;
+      var player = this.state.players.get(client.sessionId);
+      player.f_x = message.x;
+      player.f_y = message.y;
+    });
+
+    this.onMessage("shoot", (client) => {
+      var player = this.state.players.get(client.sessionId);
+      player.shootQueue = true;
+    });
+
+    this.setSimulationInterval((deltaTime) => {
+      this.update(deltaTime);
     });
   }
 
@@ -41,4 +49,21 @@ export class MyRoom extends Room<MyRoomState> {
     console.log("room", this.roomId, "disposing...");
   }
 
+  update(deltaTime: number) {
+    var dt = deltaTime / 100;
+    this.state.players.forEach(player => {
+      if (player.moveQueue != null) {
+        player.x += player.moveQueue.x * player.speed * dt;
+        player.y += player.moveQueue.y * player.speed * dt;
+        player.moveQueue = null;
+      }
+      if (player.shootQueue != null) {
+        if (player.ammo > 0) {
+          console.log("Shoot!")
+          player.ammo--;
+        }
+        player.shootQueue = null;
+      }
+    });
+  }
 }
