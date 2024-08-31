@@ -1,5 +1,5 @@
 import { Room, Client } from "@colyseus/core";
-import { MyRoomState, Player } from "./schema/MyRoomState";
+import { Bullet, MyRoomState, Player } from "./schema/MyRoomState";
 
 export class MyRoom extends Room<MyRoomState> {
   maxClients = 4;
@@ -57,12 +57,39 @@ export class MyRoom extends Room<MyRoomState> {
         player.y += player.moveQueue.y * player.speed * dt;
         player.moveQueue = null;
       }
-      if (player.shootQueue != null) {
-        if (player.ammo > 0) {
-          console.log("Shoot!")
+      
+      if (player.fireCooldown == 0) {
+        if (player.shootQueue != null && player.ammo > 0) {
+          var bullet = new Bullet();
+          bullet.x = player.x;
+          bullet.y = player.y;
+          bullet.dir_x = player.f_x - player.x;
+          bullet.dir_y = player.f_y - player.y;
+          var length = Math.sqrt(Math.pow(bullet.dir_x,2) + Math.pow(bullet.dir_y,2))
+          bullet.dir_x = bullet.dir_x / length;
+          bullet.dir_y = bullet.dir_y / length;
+          var id = crypto.randomUUID();
+          this.state.bullets.set(id, bullet)
+          console.log("Bullet added: \t\t", id)
+          player.fireCooldown = 10;
           player.ammo--;
         }
-        player.shootQueue = null;
+      } else {
+        player.fireCooldown = Math.max(player.fireCooldown - dt, 0);
+      }
+      player.shootQueue = null;
+    });
+
+    this.state.bullets.forEach((bullet, key) => {
+      var org_x = bullet.x;
+      var org_y = bullet.y;
+      bullet.x += bullet.dir_x * bullet.speed * dt;
+      bullet.y += bullet.dir_y * bullet.speed * dt;
+      bullet.range_left = Math.max(0, bullet.range_left-Math.sqrt(Math.pow(org_x - bullet.x, 2) + Math.pow(org_y - bullet.y, 2)));
+
+      if (bullet.range_left == 0) {
+        console.log("Bullet removed: \t", key)
+        this.state.bullets.delete(key);
       }
     });
   }
