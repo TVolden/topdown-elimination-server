@@ -1,5 +1,6 @@
 import { Room, Client } from "@colyseus/core";
-import { PlaygroundState, Boomer } from "./schema/PlaygroundState";
+import { PlaygroundState } from "./schema/PlaygroundState";
+import { Boomer } from "./schema/Boomer";
 
 export class Playground extends Room<PlaygroundState> {
   maxClients = 4;
@@ -37,6 +38,15 @@ export class Playground extends Room<PlaygroundState> {
   update(deltaTime:number) {
     this.state.players.forEach(player => {
       player.update(deltaTime);
+    });
+
+    this.state.bombs.forEach((bomb, uuid) => {
+      bomb.update(deltaTime);
+      
+      if (bomb.exploded) {
+        this.broadcast("exploded", bomb);
+        this.state.bombs.delete(uuid);
+      }
     });
   }
 }
